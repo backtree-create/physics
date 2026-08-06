@@ -103,7 +103,7 @@ const rhoAir0=1.225; // kg/m3（海面での空気密度）
 const rhoWater=1000;
 const g=9.8;
 const MIN_H=-11000, MAX_H=25000; // 表示範囲：マリアナ海溝付近 〜 成層圏
-const CROSS_PAD={L:86,R:18,T:56,B:52}; // 断面図の余白（人型アイコンが上下端で見切れないよう大きめに確保）
+const CROSS_PAD={L:150,R:18,T:56,B:52}; // 断面図の余白（左側は基準点ラベル、上下は人型アイコンの分を大きめに確保）
 
 function airPressure(h){return P0*Math.exp(-h/H);}
 function airDensity(h){return rhoAir0*Math.exp(-h/H);}
@@ -198,45 +198,48 @@ function drawCrossSection(thumbScale){
 }
 function getCss(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
 
-// 人型アイコン：気圧が低いところでは大きく膨らみ、水圧が高いところでは押しつぶされる
+// 人型アイコン（トイレマークのようなピクトグラム風）：
+// 気圧が低いところでは大きく膨らみ、水圧が高いところでは押しつぶされる
 function drawPerson(cx, cy, scale){
-  const baseH=64; // 基準となる身長(px)。かなり大きめにして断面図の主役にする
-  const H=baseH*scale, W=H*0.5;
-  const headR=W*0.30;
-  const headCy=cy-H*0.36;
-  const shoulderY=headCy+headR*0.9;
-  const hipY=cy+H*0.14;
-  const footY=cy+H*0.46;
+  const baseH=64; // 基準の身長(px)
+  const H=baseH*scale, W=H*0.56;
 
-  const fill=getCss('--highlight'), dark='#0a0e15';
-  ctx.fillStyle=fill; ctx.strokeStyle=dark; ctx.lineWidth=Math.max(1.4,2*scale*0.6);
-  ctx.lineJoin='round'; ctx.lineCap='round';
+  const headR=W*0.17;
+  const headCy=cy-H*0.38;
+  const shoulderY=headCy+headR*1.05;
+  const waistY=cy+H*0.00;
+  const hipY=cy+H*0.10;
+  const footY=cy+H*0.48;
 
-  // 脚
-  ctx.beginPath();
-  ctx.moveTo(cx-W*0.16,hipY); ctx.lineTo(cx-W*0.30,footY);
-  ctx.moveTo(cx+W*0.16,hipY); ctx.lineTo(cx+W*0.30,footY);
-  ctx.stroke();
+  const shoulderHalfW=W*0.30;
+  const hipHalfW=W*0.20;
+  const legGapHalfW=W*0.045;
+  const footHalfW=W*0.26;
+  const armInnerTop=W*0.16;
+  const armInnerBottom=W*0.22;
+  const armOuterBottom=W*0.34;
 
-  // 腕
-  ctx.beginPath();
-  ctx.moveTo(cx-W*0.24,shoulderY); ctx.lineTo(cx-W*0.42,hipY-H*0.02);
-  ctx.moveTo(cx+W*0.24,shoulderY); ctx.lineTo(cx+W*0.42,hipY-H*0.02);
-  ctx.stroke();
+  ctx.fillStyle=getCss('--highlight');
+  ctx.strokeStyle='#0a0e15'; ctx.lineWidth=Math.max(1,1.4*scale);
+  ctx.lineJoin='round';
 
-  // 胴体
-  ctx.beginPath();
-  ctx.moveTo(cx-W*0.30,shoulderY);
-  ctx.quadraticCurveTo(cx-W*0.34,(shoulderY+hipY)/2, cx-W*0.22,hipY);
-  ctx.lineTo(cx+W*0.22,hipY);
-  ctx.quadraticCurveTo(cx+W*0.34,(shoulderY+hipY)/2, cx+W*0.30,shoulderY);
-  ctx.closePath();
-  ctx.fill(); ctx.stroke();
+  function poly(pts){
+    ctx.beginPath();
+    pts.forEach(([px,py],i)=>{ i===0? ctx.moveTo(cx+px,cy0(py)) : ctx.lineTo(cx+px,cy0(py)); });
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+  function cy0(y){return y;} // pts already carry absolute y
 
+  // 胴体（肩〜腰の台形）
+  poly([[-shoulderHalfW,shoulderY],[shoulderHalfW,shoulderY],[hipHalfW,hipY],[-hipHalfW,hipY]]);
+  // 左腕／右腕
+  poly([[-shoulderHalfW,shoulderY],[-armInnerTop,shoulderY],[-armInnerBottom,waistY],[-armOuterBottom,waistY]]);
+  poly([[shoulderHalfW,shoulderY],[armInnerTop,shoulderY],[armInnerBottom,waistY],[armOuterBottom,waistY]]);
+  // 左脚／右脚（中央に隙間を空けて、いわゆるピクトグラムの脚の形にする）
+  poly([[-hipHalfW,hipY],[-legGapHalfW,hipY],[-legGapHalfW*0.7,footY],[-footHalfW,footY]]);
+  poly([[hipHalfW,hipY],[legGapHalfW,hipY],[legGapHalfW*0.7,footY],[footHalfW,footY]]);
   // 頭
-  ctx.beginPath();
-  ctx.arc(cx,headCy,headR,0,Math.PI*2);
-  ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx,headCy,headR,0,Math.PI*2); ctx.fill(); ctx.stroke();
 }
 
 function updateAll(){
@@ -251,8 +254,19 @@ function updateAll(){
   document.getElementById('rRho').textContent= h>=0? rho.toFixed(3)+' kg/m³（空気）' : rho.toFixed(0)+' kg/m³（水）';
   document.getElementById('zoneBadge').textContent=zoneLabel(h);
 
-  // 圧力が低いほど風船のように膨らみ、高いほど押しつぶされる、というつまみの見た目を計算
-  const thumbScale=Math.min(2.0, Math.max(0.5, Math.pow(P0/P, 0.12)));
+  // 圧力が低いほど風船のように膨らみ、高いほど押しつぶされる。
+  // 海面のすぐ下で急につぶれると単調でつまらないため、圧力そのものではなく
+  // 「海面からどれだけ進んだか」の割合を指数を掛けて使い、深くなるほど
+  // だんだん効いてくる(=最初はゆっくり、奥に行くほど急に縮む)ようにする。
+  const SCALE_MAX=1.9, SCALE_MIN=0.42;
+  let thumbScale;
+  if(h>=0){
+    const f=Math.pow(h/MAX_H, 1.5);
+    thumbScale=1+(SCALE_MAX-1)*f;
+  } else {
+    const f=Math.pow((-h)/(-MIN_H), 1.8);
+    thumbScale=1-(1-SCALE_MIN)*f;
+  }
   hRangeEl.style.setProperty('--thumb-scale', thumbScale.toFixed(3));
 
   drawCrossSection(thumbScale);
