@@ -4,7 +4,7 @@
 // 以前のバージョンは「キャッシュ優先」だったため、404などのエラー応答まで
 // 正常なページとしてキャッシュしてしまい、一度エラーになったページがその後ずっと
 // 直らないという不具合があった。CACHE_VERSIONを上げることで、その古い誤ったキャッシュも破棄する。
-const CACHE_VERSION = 'chikara-v2';
+const CACHE_VERSION = 'chikara-v3';
 const CORE_ASSETS = [
   './',
   './index.html',
