@@ -103,6 +103,7 @@ const rhoAir0=1.225; // kg/m3（海面での空気密度）
 const rhoWater=1000;
 const g=9.8;
 const MIN_H=-11000, MAX_H=25000; // 表示範囲：マリアナ海溝付近 〜 成層圏
+const CROSS_PAD={L:86,R:18,T:56,B:52}; // 断面図の余白（人型アイコンが上下端で見切れないよう大きめに確保）
 
 function airPressure(h){return P0*Math.exp(-h/H);}
 function airDensity(h){return rhoAir0*Math.exp(-h/H);}
@@ -153,7 +154,7 @@ function drawCrossSection(thumbScale){
   const w=rect.width, h=rect.height;
   ctx.clearRect(0,0,w,h);
 
-  const padL=86, padR=18, padT=10, padB=10;
+  const padL=CROSS_PAD.L, padR=CROSS_PAD.R, padT=CROSS_PAD.T, padB=CROSS_PAD.B;
   const plotW=w-padL-padR, plotH=h-padT-padB;
   const x0=padL, x1=padL+plotW;
 
@@ -184,21 +185,59 @@ function drawCrossSection(thumbScale){
   });
   ctx.textAlign='left';
 
-  // 現在地マーカー
+  // 現在地マーカー（人型アイコン）：断面図の水平方向の中央に配置する
   const hNow=parseFloat(hRangeEl.value);
   const my=padT+hToFrac(hNow)*plotH;
   ctx.strokeStyle=getCss('--highlight'); ctx.lineWidth=1.6; ctx.setLineDash([4,3]);
   ctx.beginPath(); ctx.moveTo(x0,my); ctx.lineTo(x1,my); ctx.stroke();
   ctx.setLineDash([]);
-  ctx.fillStyle=getCss('--highlight');
-  const markerR=6*thumbScale; // つまみと同じ考え方：低圧では膨らみ、高圧ではつぶれる
-  ctx.beginPath(); ctx.arc(x1-14,my,markerR,0,Math.PI*2); ctx.fill();
-  ctx.strokeStyle='#0a0e15'; ctx.lineWidth=1.5; ctx.stroke();
+  drawPerson(x0+plotW/2, my, thumbScale);
 
   ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.lineWidth=1;
   ctx.strokeRect(x0,padT,plotW,plotH);
 }
 function getCss(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+
+// 人型アイコン：気圧が低いところでは大きく膨らみ、水圧が高いところでは押しつぶされる
+function drawPerson(cx, cy, scale){
+  const baseH=64; // 基準となる身長(px)。かなり大きめにして断面図の主役にする
+  const H=baseH*scale, W=H*0.5;
+  const headR=W*0.30;
+  const headCy=cy-H*0.36;
+  const shoulderY=headCy+headR*0.9;
+  const hipY=cy+H*0.14;
+  const footY=cy+H*0.46;
+
+  const fill=getCss('--highlight'), dark='#0a0e15';
+  ctx.fillStyle=fill; ctx.strokeStyle=dark; ctx.lineWidth=Math.max(1.4,2*scale*0.6);
+  ctx.lineJoin='round'; ctx.lineCap='round';
+
+  // 脚
+  ctx.beginPath();
+  ctx.moveTo(cx-W*0.16,hipY); ctx.lineTo(cx-W*0.30,footY);
+  ctx.moveTo(cx+W*0.16,hipY); ctx.lineTo(cx+W*0.30,footY);
+  ctx.stroke();
+
+  // 腕
+  ctx.beginPath();
+  ctx.moveTo(cx-W*0.24,shoulderY); ctx.lineTo(cx-W*0.42,hipY-H*0.02);
+  ctx.moveTo(cx+W*0.24,shoulderY); ctx.lineTo(cx+W*0.42,hipY-H*0.02);
+  ctx.stroke();
+
+  // 胴体
+  ctx.beginPath();
+  ctx.moveTo(cx-W*0.30,shoulderY);
+  ctx.quadraticCurveTo(cx-W*0.34,(shoulderY+hipY)/2, cx-W*0.22,hipY);
+  ctx.lineTo(cx+W*0.22,hipY);
+  ctx.quadraticCurveTo(cx+W*0.34,(shoulderY+hipY)/2, cx+W*0.30,shoulderY);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  // 頭
+  ctx.beginPath();
+  ctx.arc(cx,headCy,headR,0,Math.PI*2);
+  ctx.fill(); ctx.stroke();
+}
 
 function updateAll(){
   let h=parseFloat(hRangeEl.value);
@@ -225,7 +264,7 @@ window.addEventListener('resize',updateAll);
 let dragging=false;
 function setHFromClientY(clientY){
   const rect=canvas.getBoundingClientRect();
-  const padT=10, padB=10;
+  const padT=CROSS_PAD.T, padB=CROSS_PAD.B;
   const frac=Math.min(1,Math.max(0,(clientY-rect.top-padT)/(rect.height-padT-padB)));
   const h=fracToH(frac);
   hRangeEl.value=Math.round(h/50)*50;
