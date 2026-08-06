@@ -1,6 +1,10 @@
-// シンプルなオフラインキャッシュ。同一オリジンのファイルのみキャッシュし、
-// 更新時はキャッシュ名(CACHE_VERSION)を上げれば古いキャッシュは自動的に破棄される。
-const CACHE_VERSION = 'chikara-v1';
+// オフラインでも開けるようにするためのキャッシュ。
+// 開発中・更新中のサイトであることを踏まえ、オンライン時は必ず最新のファイルを取りに行き
+// （ネットワーク優先）、取得できたときだけキャッシュに保存する。オフライン時のみキャッシュを使う。
+// 以前のバージョンは「キャッシュ優先」だったため、404などのエラー応答まで
+// 正常なページとしてキャッシュしてしまい、一度エラーになったページがその後ずっと
+// 直らないという不具合があった。CACHE_VERSIONを上げることで、その古い誤ったキャッシュも破棄する。
+const CACHE_VERSION = 'chikara-v2';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -11,17 +15,14 @@ const CORE_ASSETS = [
   './freefall.html',
   './pendulum.html',
   './pulley.html',
-  './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
-  './icons/apple-touch-icon.png',
-  './icons/favicon-32.png',
-  './icons/favicon-16.png'
+  './manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_VERSION).then((cache) => cache.addAll(CORE_ASSETS)).catch(() => {})
+    caches.open(CACHE_VERSION).then((cache) =>
+      Promise.all(CORE_ASSETS.map((url) => cache.add(url).catch(() => {})))
+    )
   );
   self.skipWaiting();
 });
@@ -39,29 +40,17 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
 
-  const url = new URL(req.url);
-  const sameOrigin = url.origin === self.location.origin;
-
-  if (sameOrigin) {
-    // 同一オリジン：キャッシュ優先、なければネットワークから取得してキャッシュに追加
-    event.respondWith(
-      caches.match(req).then((cached) => {
-        if (cached) return cached;
-        return fetch(req).then((res) => {
-          const resClone = res.clone();
-          caches.open(CACHE_VERSION).then((cache) => cache.put(req, resClone));
-          return res;
-        }).catch(() => cached);
-      })
-    );
-  } else {
-    // 外部(フォント・Three.jsなど)：ネットワーク優先、失敗時はキャッシュがあれば使う
-    event.respondWith(
-      fetch(req).then((res) => {
+  event.respondWith(
+    fetch(req).then((res) => {
+      // 成功した応答(200番台)だけをキャッシュする。404やエラーは絶対に保存しない。
+      if (res && res.ok) {
         const resClone = res.clone();
         caches.open(CACHE_VERSION).then((cache) => cache.put(req, resClone)).catch(() => {});
-        return res;
-      }).catch(() => caches.match(req))
-    );
-  }
+      }
+      return res;
+    }).catch(() => {
+      // オフライン等でネットワークが使えないときだけキャッシュにフォールバック
+      return caches.match(req);
+    })
+  );
 });
