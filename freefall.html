@@ -192,6 +192,22 @@ function drawDrop(x,y,color){
   ctx.fill();
 }
 
+function drawLaneAxis(laneX, topY, botY){
+  // 空気抵抗なし・ありの両レーンで完全に同じ描き方をする共通関数（目盛りの間隔・見た目を一律にする）
+  const TICK_STEP=5; // m
+  ctx.strokeStyle='#8a8a96'; ctx.lineWidth=1;
+  ctx.font='10px "JetBrains Mono",monospace'; ctx.fillStyle='#5a6376';
+  ctx.textAlign='right';
+  for(let m=0;m<=LANE_M;m+=TICK_STEP){
+    const ty=topY + (m/LANE_M)*(botY-topY);
+    ctx.beginPath();
+    ctx.moveTo(laneX-7,ty); ctx.lineTo(laneX+7,ty);
+    ctx.stroke();
+    ctx.fillText(m+'m', laneX-11, ty+3);
+  }
+  ctx.textAlign='left';
+}
+
 function draw(){
   const w=canvas.clientWidth,h=canvas.clientHeight;
   ctx.clearRect(0,0,w,h);
@@ -203,6 +219,10 @@ function draw(){
   ctx.beginPath();ctx.moveTo(laneX1,topY);ctx.lineTo(laneX1,botY);ctx.stroke();
   ctx.beginPath();ctx.moveTo(laneX2,topY);ctx.lineTo(laneX2,botY);ctx.stroke();
   ctx.setLineDash([]);
+
+  // 距離の縦軸（0〜25m）。2レーンとも同じ関数で描くことで見た目を一律にそろえる
+  drawLaneAxis(laneX1, topY, botY);
+  drawLaneAxis(laneX2, topY, botY);
 
   ctx.fillStyle='#5a6376'; ctx.font='11px "JetBrains Mono",monospace'; ctx.textAlign='center';
   ctx.fillText('空気抵抗なし',laneX1,18);
