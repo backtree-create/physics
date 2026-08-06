@@ -21,12 +21,18 @@
 <style>
   :root{--accent:var(--water);}
   .layout{grid-template-columns:1.3fr 1fr;}
-  .charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
-  .charts .box{background:var(--bg-panel-2);border:1px solid var(--border);border-radius:10px;padding:12px;}
-  .charts .box h3{font-family:var(--font-mono);font-size:11px;color:var(--text-dim);letter-spacing:.06em;margin-bottom:8px;text-transform:uppercase;}
-  canvas.chart{width:100%;height:220px;display:block;}
-  #stage3d{width:100%;height:300px;}
+  .crosswrap{
+    display:flex;gap:14px;background:var(--bg-panel-2);border:1px solid var(--border);
+    border-radius:10px;padding:14px;margin-bottom:16px;
+  }
+  canvas#crossSection{width:100%;height:560px;display:block;border-radius:6px;cursor:ns-resize;touch-action:none;}
+  .cross-hint{font-family:var(--font-mono);font-size:11px;color:var(--text-faint);margin-top:8px;text-align:center;}
+  #stage3d{width:100%;height:280px;}
   .hint3d{font-family:var(--font-mono);font-size:11px;color:var(--text-faint);margin-top:8px;text-align:center;}
+  .zonebadge{
+    display:inline-block;font-family:var(--font-mono);font-size:11px;padding:4px 12px;border-radius:100px;
+    border:1px solid var(--water);color:var(--water);margin-bottom:10px;
+  }
 </style>
 </head>
 <body>
@@ -44,18 +50,14 @@
 
 <div class="layout">
   <div class="panel">
-    <h2><span class="dot"></span>圧力のグラフ</h2>
-    <div class="charts">
-      <div class="box">
-        <h3>大気圧 vs 高度</h3>
-        <canvas class="chart" id="chartAir"></canvas>
-      </div>
-      <div class="box">
-        <h3>水圧 vs 深さ</h3>
-        <canvas class="chart" id="chartWater"></canvas>
-      </div>
+    <h2><span class="dot"></span>地球の断面で見る（成層圏〜マリアナ海溝）</h2>
+    <div class="zonebadge" id="zoneBadge">海面 0m</div>
+    <div class="crosswrap">
+      <canvas id="crossSection"></canvas>
     </div>
-    <h2><span class="dot"></span>圧力は全方向にはたらく（3D）</h2>
+    <div class="cross-hint">図をドラッグ、または下のスライダーで高度・深さを動かせます</div>
+
+    <h2 style="margin-top:20px;"><span class="dot"></span>圧力は全方向にはたらく（3D）</h2>
     <div class="stage"><div id="stage3d"></div></div>
     <div class="hint3d">ドラッグで回転 ― 立方体のすべての面に、面と垂直に圧力（水色の矢印）が押しつけている</div>
   </div>
@@ -64,107 +66,158 @@
     <h2><span class="dot"></span>パラメータ</h2>
     <div class="controls">
       <div class="control">
-        <label>高度（大気中） <span class="val"><span id="altVal">0</span> m</span></label>
-        <input type="range" id="alt" min="0" max="12000" value="0" step="100">
-      </div>
-      <div class="control">
-        <label>深さ（水中） <span class="val"><span id="depthVal">0</span> m</span></label>
-        <input type="range" id="depth" min="0" max="30" value="0" step="0.5">
+        <label>高度・深さ（0＝海面） <span class="val"><span id="hVal">0</span> m</span></label>
+        <input type="range" id="hRange" min="-11000" max="25000" value="0" step="50">
       </div>
     </div>
 
     <h2 style="margin-top:22px;"><span class="dot"></span>読み取り値</h2>
     <div class="readout">
-      <div class="item"><div class="k">大気圧（この高度）</div><div class="v" id="rPair">101.3 kPa</div></div>
-      <div class="item"><div class="k">空気の密度</div><div class="v" id="rRhoAir">1.20 kg/m³</div></div>
-      <div class="item"><div class="k">水圧（絶対圧）</div><div class="v velocity" id="rPwater">101.3 kPa</div></div>
-      <div class="item"><div class="k">水の密度</div><div class="v">1000 kg/m³</div></div>
+      <div class="item"><div class="k">現在地</div><div class="v" id="rZone">海面</div></div>
+      <div class="item"><div class="k">圧力（絶対圧）</div><div class="v velocity" id="rPressure">101.3 kPa</div></div>
+      <div class="item"><div class="k">気圧に換算</div><div class="v" id="rAtm">1.00 atm</div></div>
+      <div class="item"><div class="k">流体の密度</div><div class="v" id="rRho">1.20 kg/m³</div></div>
     </div>
 
     <div class="explain" id="explainText">
-      密度が大きいほど、同じ深さ・高度あたりの圧力変化は急になります。水は空気のおよそ800倍密度が大きいため、水深10mで大気1気圧分もの圧力が加わります。
-      <div class="note">大気圧が高度とともに<strong>ゆるやかに</strong>減るのは、空気が圧縮性の流体で、上空に行くほど空気自体が薄くなる（密度が下がる）ためです。一方、水はほとんど圧縮されないため、密度はどの深さでもほぼ一定。だから水圧は深さに<strong>比例して直線的に</strong>増え続けます。</div>
+      スライダーを右（上空）に動かすと、大気はどんどん薄くなり、圧力は<strong>ゆるやかに</strong>下がっていきます。左（深海）に動かすと、水はほとんど圧縮されないため、圧力は深さに<strong>比例して直線的に</strong>急増していきます。同じ「流体の重さによる圧力」でも、増え方・減り方がまるで違うのは、空気と水の<strong>密度・圧縮のされやすさ</strong>が全く違うからです。
+      <div class="note">水深10.3mごとに、大気1気圧ぶん（約101kPa）も圧力が増えます。一方、大気圧が半分になるのは高度およそ5,500m。海面からわずか10mと、5.5kmの差が、この2つの流体の違いを物語っています。</div>
     </div>
   </div>
 </div>
 
 <footer class="source">
   <h3>Reference</h3>
-  水圧 P=ρgh（水の密度1000 kg/m³、重力加速度9.8 m/s²）は流体静力学の基本式。大気圧の高度変化は等温大気を仮定した気圧の高度分布（P=P0 exp(-h/H)、スケールハイトH≈8000m、海面気圧P0=101325 Pa）による近似で、国際標準大気（ISA）モデルの簡略版に相当する。パスカルの原理（静止流体中の圧力はあらゆる方向に同じ大きさで垂直に働く）は流体力学の基本原理。
+  水圧 P=ρgh（水の密度1000 kg/m³、重力加速度9.8 m/s²）は流体静力学の基本式。大気圧の高度変化は等温大気を仮定した気圧の高度分布（P=P0 exp(-h/H)、スケールハイトH≈8000m、海面気圧P0=101325 Pa）による近似で、国際標準大気（ISA）モデルの簡略版に相当する。パスカルの原理（静止流体中の圧力はあらゆる方向に同じ大きさで垂直に働く）は流体力学の基本原理。断面図中の基準点は、エベレスト山頂（8,849m、測量標高）、旅客機の巡航高度（対流圏界面付近、約11,000m）、太陽光が届く限界（海洋の有光層の目安、約200m）、マリアナ海溝チャレンジャー海淵（水深約10,935m）などの一般的な値を使用。海面付近の圧力は両モデルとも101.325kPaで一致するが、それより先の変化の仕方（ゆるやかな指数関数的減少 vs 急な直線的増加）が大きく異なる点が、このシミュレーターの主題。
 </footer>
 
 <script>
-const altEl=document.getElementById('alt'), depthEl=document.getElementById('depth');
-const altVal=document.getElementById('altVal'), depthVal=document.getElementById('depthVal');
-altEl.addEventListener('input',()=>altVal.textContent=altEl.value);
-depthEl.addEventListener('input',()=>depthVal.textContent=depthEl.value);
-
-const P0=101.325; // kPa
-const H=8000; // m scale height
-const rhoAir0=1.225; // kg/m3 sea level
+const P0=101.325; // kPa（海面気圧）
+const H=8000; // m スケールハイト
+const rhoAir0=1.225; // kg/m3（海面での空気密度）
 const rhoWater=1000;
 const g=9.8;
+const MIN_H=-11000, MAX_H=25000; // 表示範囲：マリアナ海溝付近 〜 成層圏
 
 function airPressure(h){return P0*Math.exp(-h/H);}
 function airDensity(h){return rhoAir0*Math.exp(-h/H);}
-function waterPressure(depth){return P0 + (rhoWater*g*depth)/1000;} // kPa
+function waterPressure(depth){return P0 + (rhoWater*g*depth)/1000;} // depthは正の値(m)、kPa
+function pressureAt(h){ return h>=0 ? airPressure(h) : waterPressure(-h); }
+function densityAt(h){ return h>=0 ? airDensity(h) : rhoWater; }
 
-function drawChart(canvas,{yMax,curveFn,marker,color,invert,xMax,xLabel,yLabel}){
+const REF_POINTS=[
+  {h:25000, label:'成層圏 +25,000m'},
+  {h:11000, label:'旅客機の巡航高度 +11,000m'},
+  {h:8849,  label:'エベレスト山頂 +8,849m'},
+  {h:0,     label:'海面 0m'},
+  {h:-200,  label:'太陽光が届く限界 -200m'},
+  {h:-1000, label:'-1,000m'},
+  {h:-4000, label:'-4,000m'},
+  {h:-10935,label:'マリアナ海溝 -10,935m'}
+];
+
+const hRangeEl=document.getElementById('hRange'), hValEl=document.getElementById('hVal');
+const canvas=document.getElementById('crossSection'), ctx=canvas.getContext('2d');
+
+function hToFrac(h){ return (MAX_H-h)/(MAX_H-MIN_H); } // 0(上端)〜1(下端)
+function fracToH(f){ return MAX_H-f*(MAX_H-MIN_H); }
+
+function zoneLabel(h){
+  if(h>=20000) return '成層圏';
+  if(h>=11000) return '対流圏界面付近';
+  if(h>=1000) return '対流圏（高地）';
+  if(h>0) return '対流圏（地表付近）';
+  if(h===0) return '海面';
+  if(h>=-200) return '海：太陽光の届く層';
+  if(h>=-1000) return '海：薄明層（トワイライトゾーン）';
+  if(h>=-4000) return '海：無光層（深海）';
+  return '海溝（超深海帯）';
+}
+
+function drawCrossSection(){
   const dpr=devicePixelRatio||1;
   const rect=canvas.getBoundingClientRect();
   canvas.width=rect.width*dpr; canvas.height=rect.height*dpr;
-  const ctx=canvas.getContext('2d');
   ctx.setTransform(dpr,0,0,dpr,0,0);
-  const w=rect.width,h=rect.height;
+  const w=rect.width, h=rect.height;
   ctx.clearRect(0,0,w,h);
-  const padL=40,padB=26,padT=10,padR=14;
+
+  const padL=86, padR=18, padT=10, padB=10;
   const plotW=w-padL-padR, plotH=h-padT-padB;
-  // axes
-  ctx.strokeStyle='#8a8a96'; ctx.lineWidth=1;
-  ctx.beginPath();ctx.moveTo(padL,padT);ctx.lineTo(padL,padT+plotH);ctx.lineTo(padL+plotW,padT+plotH);ctx.stroke();
-  ctx.fillStyle='#5a6376'; ctx.font='10px "JetBrains Mono",monospace';
-  ctx.fillText(xLabel,padL+plotW-60,padT+plotH+18);
-  ctx.save();ctx.translate(10,padT+14);ctx.rotate(-Math.PI/2);ctx.fillText(yLabel,0,0);ctx.restore();
+  const x0=padL, x1=padL+plotW;
 
-  // curve
-  ctx.strokeStyle=color; ctx.lineWidth=2.2; ctx.beginPath();
-  const N=60;
-  for(let i=0;i<=N;i++){
-    const yv=(i/N)*yMax;
-    const xv=curveFn(yv);
-    const px=padL+(xv/xMax)*plotW;
-    const py= invert? padT+(yv/yMax)*plotH : padT+plotH-(yv/yMax)*plotH;
-    if(i===0)ctx.moveTo(px,py); else ctx.lineTo(px,py);
-  }
-  ctx.stroke();
+  // 背景グラデーション：成層圏(暗い青)→対流圏(空色)→海面→深海(黒に近い青)
+  const grad=ctx.createLinearGradient(0,padT,0,padT+plotH);
+  const stops=[
+    [25000,'#080a1c'], [15000,'#152852'], [11000,'#2a4a96'], [3000,'#5a96d2'],
+    [200,'#9cc7e6'], [0,'#bfe0ee'],
+    [-0.1,'#1e82b4'], [-200,'#146a9a'], [-1000,'#0a3c6e'], [-4000,'#051e3c'], [-11000,'#020509']
+  ];
+  stops.forEach(([hv,col])=>grad.addColorStop(Math.min(1,Math.max(0,hToFrac(hv))), col));
+  ctx.fillStyle=grad;
+  ctx.fillRect(x0,padT,plotW,plotH);
 
-  // marker
-  const mx=padL+(curveFn(marker)/xMax)*plotW;
-  const my= invert? padT+(marker/yMax)*plotH : padT+plotH-(marker/yMax)*plotH;
-  ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--highlight').trim();
-  ctx.beginPath();ctx.arc(mx,my,5,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle='rgba(255,200,87,.3)';ctx.lineWidth=1;
-  ctx.beginPath();ctx.moveTo(padL,my);ctx.lineTo(mx,my);ctx.stroke();
-}
+  // 海面ライン
+  const seaY=padT+hToFrac(0)*plotH;
+  ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(x0,seaY); ctx.lineTo(x1,seaY); ctx.stroke();
 
-function updateCharts(){
-  const alt=parseFloat(altEl.value), depth=parseFloat(depthEl.value);
-  drawChart(document.getElementById('chartAir'),{
-    yMax:12000, curveFn:airPressure, marker:alt, color:getComputedStyle(document.documentElement).getPropertyValue('--force').trim(),
-    invert:false, xMax:110, xLabel:'kPa', yLabel:'高度 m'
+  // 基準点の目盛り・ラベル
+  ctx.font='10px "JetBrains Mono",monospace';
+  REF_POINTS.forEach(p=>{
+    const y=padT+hToFrac(p.h)*plotH;
+    ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(x0-6,y); ctx.lineTo(x0,y); ctx.stroke();
+    ctx.fillStyle='rgba(255,255,255,.82)'; ctx.textAlign='right';
+    ctx.fillText(p.label, x0-9, y+3);
   });
-  drawChart(document.getElementById('chartWater'),{
-    yMax:30, curveFn:waterPressure, marker:depth, color:getComputedStyle(document.documentElement).getPropertyValue('--water').trim(),
-    invert:true, xMax:400, xLabel:'kPa', yLabel:'深さ m'
-  });
-  document.getElementById('rPair').textContent=airPressure(alt).toFixed(1)+' kPa';
-  document.getElementById('rRhoAir').textContent=airDensity(alt).toFixed(3)+' kg/m³';
-  document.getElementById('rPwater').textContent=waterPressure(depth).toFixed(1)+' kPa';
+  ctx.textAlign='left';
+
+  // 現在地マーカー
+  const hNow=parseFloat(hRangeEl.value);
+  const my=padT+hToFrac(hNow)*plotH;
+  ctx.strokeStyle=getCss('--highlight'); ctx.lineWidth=1.6; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(x0,my); ctx.lineTo(x1,my); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle=getCss('--highlight');
+  ctx.beginPath(); ctx.arc(x1-14,my,6,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#0a0e15'; ctx.lineWidth=1.5; ctx.stroke();
+
+  ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.lineWidth=1;
+  ctx.strokeRect(x0,padT,plotW,plotH);
 }
-altEl.addEventListener('input',updateCharts);
-depthEl.addEventListener('input',updateCharts);
-window.addEventListener('resize',updateCharts);
-updateCharts();
+function getCss(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+
+function updateAll(){
+  const h=parseFloat(hRangeEl.value);
+  hValEl.textContent=h.toFixed(0);
+  const P=pressureAt(h), rho=densityAt(h);
+  document.getElementById('rZone').textContent = h===0?'海面':(h>0? '高度 '+h.toFixed(0)+'m' : '水深 '+(-h).toFixed(0)+'m');
+  document.getElementById('rPressure').textContent=P.toFixed(2)+' kPa';
+  document.getElementById('rAtm').textContent=(P/P0).toFixed(2)+' atm';
+  document.getElementById('rRho').textContent= h>=0? rho.toFixed(3)+' kg/m³（空気）' : rho.toFixed(0)+' kg/m³（水）';
+  document.getElementById('zoneBadge').textContent=zoneLabel(h);
+  drawCrossSection();
+}
+hRangeEl.addEventListener('input',updateAll);
+window.addEventListener('resize',updateAll);
+
+// キャンバス上を直接ドラッグしても高度・深さを変えられるようにする
+let dragging=false;
+function setHFromClientY(clientY){
+  const rect=canvas.getBoundingClientRect();
+  const padT=10, padB=10;
+  const frac=Math.min(1,Math.max(0,(clientY-rect.top-padT)/(rect.height-padT-padB)));
+  const h=fracToH(frac);
+  hRangeEl.value=Math.round(h/50)*50;
+  updateAll();
+}
+canvas.addEventListener('pointerdown',(e)=>{dragging=true; canvas.setPointerCapture(e.pointerId); setHFromClientY(e.clientY);});
+canvas.addEventListener('pointermove',(e)=>{if(dragging) setHFromClientY(e.clientY);});
+canvas.addEventListener('pointerup',()=>dragging=false);
+canvas.addEventListener('pointercancel',()=>dragging=false);
+
+updateAll();
 
 // ---- 3D scene ----
 const mount=document.getElementById('stage3d');
