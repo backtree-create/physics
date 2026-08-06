@@ -315,9 +315,9 @@ function draw(){
     const groundY=h*0.76;
     const marginL=70, marginR=120; // 右側は力の矢印・ラベル分の余白
     const pxPerMeter=(w-marginL-marginR)/CART_TRACK_M; // 走行距離いっぱいに画面幅を使う
-    ctx.strokeStyle='#c9c9d3'; ctx.lineWidth=2;
+    ctx.strokeStyle='#8a8a96'; ctx.lineWidth=2;
     ctx.beginPath(); ctx.moveTo(marginL-30,groundY); ctx.lineTo(w-marginR+60,groundY); ctx.stroke();
-    for(let x=marginL-30;x<w-marginR+60;x+=18){ctx.beginPath();ctx.moveTo(x,groundY);ctx.lineTo(x-8,groundY+10);ctx.strokeStyle='#dcdce4';ctx.lineWidth=1.5;ctx.stroke();}
+    for(let x=marginL-30;x<w-marginR+60;x+=18){ctx.beginPath();ctx.moveTo(x,groundY);ctx.lineTo(x-8,groundY+10);ctx.strokeStyle='#b0b0bb';ctx.lineWidth=1.5;ctx.stroke();}
 
     const cx=marginL+cartX*pxPerMeter;
     const cy=groundY;
@@ -377,10 +377,10 @@ function draw(){
     }
 
     // 斜面(＝軸に立てた直角三角形の斜辺／左上＝高い方、右下＝低い方)
-    ctx.strokeStyle='#c9c9d3'; ctx.lineWidth=3;
+    ctx.strokeStyle='#8a8a96'; ctx.lineWidth=3;
     ctx.beginPath(); ctx.moveTo(topX,topY); ctx.lineTo(baseX,baseY); ctx.stroke();
     // 三角形の残り一辺(高さを示す破線)
-    ctx.strokeStyle='#dcdce4'; ctx.setLineDash([3,4]); ctx.lineWidth=1.5;
+    ctx.strokeStyle='#b0b0bb'; ctx.setLineDash([3,4]); ctx.lineWidth=1.5;
     ctx.beginPath(); ctx.moveTo(topX,topY); ctx.lineTo(originX,originY); ctx.stroke();
     ctx.setLineDash([]);
 
@@ -392,7 +392,7 @@ function draw(){
     ctx.fillText('θ='+angleEl.value+'°',baseX-arcR-56,baseY-10);
 
     // 地面のハッチング
-    ctx.strokeStyle='#dcdce4'; ctx.lineWidth=1.5;
+    ctx.strokeStyle='#b0b0bb'; ctx.lineWidth=1.5;
     for(let x=originX-14;x<baseX+40;x+=16){ctx.beginPath();ctx.moveTo(x,originY);ctx.lineTo(x-8,originY+10);ctx.stroke();}
 
     const dPx=slopeD*len;

@@ -199,7 +199,7 @@ function draw(){
   const topY=26, botY=h-26;
   const laneX1=w*0.32, laneX2=w*0.68;
 
-  ctx.strokeStyle='#dcdce4'; ctx.setLineDash([4,5]); ctx.lineWidth=1;
+  ctx.strokeStyle='#b0b0bb'; ctx.setLineDash([4,5]); ctx.lineWidth=1;
   ctx.beginPath();ctx.moveTo(laneX1,topY);ctx.lineTo(laneX1,botY);ctx.stroke();
   ctx.beginPath();ctx.moveTo(laneX2,topY);ctx.lineTo(laneX2,botY);ctx.stroke();
   ctx.setLineDash([]);
@@ -246,7 +246,7 @@ function drawChart(){
   const w=rect.width,h=rect.height; cctx.clearRect(0,0,w,h);
   const padL=38,padB=22,padT=10,padR=10;
   const plotW=w-padL-padR, plotH=h-padT-padB;
-  cctx.strokeStyle='#c9c9d3'; cctx.lineWidth=1;
+  cctx.strokeStyle='#8a8a96'; cctx.lineWidth=1;
   cctx.beginPath();cctx.moveTo(padL,padT);cctx.lineTo(padL,padT+plotH);cctx.lineTo(padL+plotW,padT+plotH);cctx.stroke();
 
   const D=parseFloat(dEl.value); const vt=terminalVelocity(D);

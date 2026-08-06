@@ -120,7 +120,7 @@ function drawChart(canvas,{yMax,curveFn,marker,color,invert,xMax,xLabel,yLabel})
   const padL=40,padB=26,padT=10,padR=14;
   const plotW=w-padL-padR, plotH=h-padT-padB;
   // axes
-  ctx.strokeStyle='#c9c9d3'; ctx.lineWidth=1;
+  ctx.strokeStyle='#8a8a96'; ctx.lineWidth=1;
   ctx.beginPath();ctx.moveTo(padL,padT);ctx.lineTo(padL,padT+plotH);ctx.lineTo(padL+plotW,padT+plotH);ctx.stroke();
   ctx.fillStyle='#5a6376'; ctx.font='10px "JetBrains Mono",monospace';
   ctx.fillText(xLabel,padL+plotW-60,padT+plotH+18);

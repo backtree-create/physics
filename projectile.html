@@ -145,7 +145,7 @@ function draw(){
   const originX=50, originY=h-40;
 
   // ground
-  ctx.strokeStyle='#c9c9d3'; ctx.lineWidth=2;
+  ctx.strokeStyle='#8a8a96'; ctx.lineWidth=2;
   ctx.beginPath(); ctx.moveTo(0,originY); ctx.lineTo(w,originY); ctx.stroke();
 
   // trail
@@ -228,10 +228,10 @@ function drawChart(){
   const P=getParams();
   const padL=34,padB=20,padT=8,padR=8;
   const plotW=w-padL-padR, plotH=h-padT-padB;
-  cctx.strokeStyle='#c9c9d3'; cctx.lineWidth=1;
+  cctx.strokeStyle='#8a8a96'; cctx.lineWidth=1;
   cctx.beginPath();cctx.moveTo(padL,padT);cctx.lineTo(padL,padT+plotH);cctx.lineTo(padL+plotW,padT+plotH);cctx.stroke();
   const midY=padT+plotH/2;
-  cctx.strokeStyle='#dcdce4'; cctx.beginPath(); cctx.moveTo(padL,midY); cctx.lineTo(padL+plotW,midY); cctx.stroke();
+  cctx.strokeStyle='#b0b0bb'; cctx.beginPath(); cctx.moveTo(padL,midY); cctx.lineTo(padL+plotW,midY); cctx.stroke();
   const vmax=Math.max(P.vx0,Math.abs(P.vy0))*1.15;
   function toXY(tt,v){return [padL+(tt/P.tFlight)*plotW, midY-(v/vmax)*(plotH/2)];}
   // vx line (constant)

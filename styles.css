@@ -82,7 +82,7 @@ a{color:inherit;text-decoration:none;}
 .panel h2 .dot{width:6px;height:6px;border-radius:50%;background:var(--force);display:inline-block;}
 
 .stage{
-  background:radial-gradient(120% 100% at 50% 0%,#ffffff 0%,#eef0f4 100%);
+  background:radial-gradient(120% 100% at 50% 0%,#ffffff 0%,#e9ebf1 100%);
   border-radius:10px;border:1px solid var(--border);
   position:relative;overflow:hidden;
 }

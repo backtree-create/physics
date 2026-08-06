@@ -236,8 +236,8 @@ function drawSingle(){
   const pivotX=w/2, pivotY=40;
   ctx.strokeStyle='#3a4258'; ctx.lineWidth=4;
   ctx.beginPath();ctx.moveTo(pivotX-40,pivotY);ctx.lineTo(pivotX+40,pivotY);ctx.stroke();
-  ctx.fillStyle='#dcdce4';
-  for(let x=pivotX-40;x<=pivotX+40;x+=10){ctx.beginPath();ctx.moveTo(x,pivotY);ctx.lineTo(x-6,pivotY+10);ctx.strokeStyle='#dcdce4';ctx.lineWidth=2;ctx.stroke();}
+  ctx.fillStyle='#b0b0bb';
+  for(let x=pivotX-40;x<=pivotX+40;x+=10){ctx.beginPath();ctx.moveTo(x,pivotY);ctx.lineTo(x-6,pivotY+10);ctx.strokeStyle='#b0b0bb';ctx.lineWidth=2;ctx.stroke();}
 
   const bx=pivotX+Math.sin(sTheta)*L*scale;
   const by=pivotY+Math.cos(sTheta)*L*scale;
